@@ -44,9 +44,11 @@ async function generateImage(prompt) {
     if (data.code === 0) {
       return data.data.url;
     } else {
+      console.error("Error generating image:", data);
       return null;
     }
   } catch (error) {
+    console.error("Error:", error);
     return null;
   }
 }
@@ -109,7 +111,7 @@ const sendImage = (recipientId, imageUrl) => {
     }).then(response => {
         console.log('Image sent successfully:', response.data);
     }).catch(error => {
-        console.error('Error sending image:', error);
+        console.error('Error sending image:', error.response ? error.response.data : error.message);
     });
 };
 
@@ -124,7 +126,7 @@ const sendMessage = (recipientId, message) => {
     }).then(response => {
         console.log('Message sent successfully:', response.data);
     }).catch(error => {
-        console.error('Error sending message:', error);
+        console.error('Error sending message:', error.response ? error.response.data : error.message);
     });
 };
 
