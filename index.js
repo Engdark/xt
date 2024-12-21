@@ -17,9 +17,8 @@ app.post('/webhook', (req, res) => {
         
         messaging.forEach(message => {
             const senderId = message.sender.id;
-            const messageText = message.message.text;
 
-            sendMessage(senderId, messageText);
+            sendMessage(senderId);
         });
     });
 
@@ -42,13 +41,32 @@ app.get('/webhook', (req, res) => {
     }
 });
 
-const sendMessage = (recipientId, message) => {
+const sendMessage = (recipientId) => {
     axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
         recipient: {
             id: recipientId
         },
         message: {
-            text: message
+            attachment: {
+                type: 'image',
+                payload: {
+                    url: 'https://r.aiimagegenerator.io/images/13a4ecf0-7407-4f69-8fc0-89703fbcaea0.jpg',
+                    is_reusable: true
+                }
+            },
+            attachment: {
+                type: 'template',
+                payload: {
+                    template_type: 'button',
+                    buttons: [
+                        {
+                            type: 'web_url',
+                            url: 'https://m.instagram.com',
+                            title: 'Instagram'
+                        }
+                    ]
+                }
+            }
         }
     }).then(response => {
         console.log('Message sent successfully:', response.data);
