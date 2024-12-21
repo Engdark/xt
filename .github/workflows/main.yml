@@ -102,7 +102,7 @@ jobs:
         run: ./ngrok tunnel --label edge=edghts_2q4uC0Z9NBS0Dp2Wa8JYnf8VuQF http://localhost:3000 &
       
       - name: Start The Code
-        run: node . 
+        run: node . &
 
       - name: keep alive
         id: check_runs
