@@ -1,4 +1,3 @@
-const cheerio = require('cheerio');
 const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
@@ -21,7 +20,8 @@ async function fetchImages(prompt) {
     if (data.code !== 0) throw new Error(data.message);
     if (data.data.safetyState === "Soraa") throw new Error("NSFW image detected. Please try another prompt.");
     if (!data.data?.url) throw new Error("Failed to generate the image!");
-    return { status: true, image: data.data.url };
+    const imageBuffer = await axios.get(data.data.url, { responseType: 'arraybuffer' });
+    return { status: true, image: imageBuffer.data };
   } catch (e) {
     return { status: false, message: e.message };
   }
@@ -37,15 +37,17 @@ app.post('/webhook', async (req, res) => {
     const messaging = entryItem.messaging || [];
     for (const message of messaging) {
       const senderId = message.sender?.id;
-      if (senderId && message.message?.text) {
-        const imageResponse = await fetchImages(message.message.text);
-        if (imageResponse.status) {
-          sendMessage(senderId, imageResponse.image);
+      if (senderId) {
+        if (message.message?.text) {
+          const imageResponse = await fetchImages(message.message.text);
+          if (imageResponse.status) {
+            sendMessage(senderId, imageResponse.image, true);
+          } else {
+            sendMessage(senderId, 'لم يتم العثور على صورة مناسبة.');
+          }
         } else {
-          sendMessage(senderId, 'لم يتم العثور على صورة');
+          sendMessage(senderId, 'الرجاء إرسال نص للحصول على صورة.');
         }
-      } else {
-        sendMessage(senderId, 'أرسل لي نصاً للبحث عن صورة');
       }
     }
   }
@@ -64,14 +66,22 @@ app.get('/webhook', (req, res) => {
   }
 });
 
-const sendMessage = (recipientId, messageContent) => {
-  const message = typeof messageContent === 'string'
-    ? { text: messageContent }
-    : { attachment: { type: 'image', payload: { url: messageContent, is_reusable: true } } };
+const sendMessage = (recipientId, messageContent, isImage = false) => {
+  const message = isImage
+    ? {
+        attachment: {
+          type: 'image',
+          payload: {
+            url: `data:image/png;base64,${Buffer.from(messageContent).toString('base64')}`,
+            is_reusable: true
+          }
+        }
+      }
+    : { text: messageContent };
   axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
     recipient: { id: recipientId },
     message
-  }).then(() => {}).catch(console.error);
+  }).catch(console.error);
 };
 
 app.listen(port, () => {
