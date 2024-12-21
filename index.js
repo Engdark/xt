@@ -14,10 +14,12 @@ app.post('/webhook', (req, res) => {
 
     entry.forEach(entryItem => {
         const messaging = entryItem.messaging;
-        
+
         messaging.forEach(message => {
-            const senderId = message.sender.id;
-            sendImage(senderId);
+            if (message.message && message.message.text) { // التحقق من وجود نص في الرسالة
+                const senderId = message.sender.id;
+                sendImage(senderId);
+            }
         });
     });
 
@@ -41,7 +43,7 @@ app.get('/webhook', (req, res) => {
 });
 
 const sendImage = (recipientId) => {
-    const imageUrl = 'https://www.leparisien.fr/resizer/kUkxiKOQZjOcWBZ382PhaXIjWBA=/932x582/cloudfront-eu-central-1.images.arcpublishing.com/leparisien/GA3CUH7VFVDMZKJJM6VIF2KBDA.jpg';
+    const imageUrl = 'https://tinyurl.com/248palgo';
 
     axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
         recipient: {
