@@ -48,13 +48,6 @@ const sendMessage = (recipientId) => {
         },
         message: {
             attachment: {
-                type: 'image',
-                payload: {
-                    url: 'https://img.fcbayern.com/image/upload/f_auto/q_auto/ar_2:1,c_fill,g_custom,w_1280/v1667853136/cms/public/images/fcbayern-com/homepage/platzhalter/22-23-pm-fc-bayern.jpg',
-                    is_reusable: true
-                }
-            },
-            attachment: {
                 type: 'template',
                 payload: {
                     template_type: 'button',
