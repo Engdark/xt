@@ -18,7 +18,8 @@ app.post('/webhook', (req, res) => {
         messaging.forEach(message => {
             const senderId = message.sender.id;
 
-            sendMessage(senderId);
+            // إرسال قالب (template)
+            sendTemplate(senderId);
         });
     });
 
@@ -41,31 +42,64 @@ app.get('/webhook', (req, res) => {
     }
 });
 
-const sendMessage = (recipientId) => {
-    axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
+const sendTemplate = (recipientId) => {
+    const payload = {
         recipient: {
             id: recipientId
         },
         message: {
             attachment: {
-                type: 'template',
+                type: "template",
                 payload: {
-                    template_type: 'button',
-                    buttons: [
+                    template_type: "generic",
+                    elements: [
                         {
-                            type: 'web_url',
-                            url: 'https://m.instagram.com',
-                            title: 'Instagram'
+                            title: "Welcome to our service!",
+                            subtitle: "Choose an option:",
+                            image_url: "https://via.placeholder.com/150",
+                            buttons: [
+                                {
+                                    type: "web_url",
+                                    url: "https://example.com",
+                                    title: "Visit Website"
+                                },
+                                {
+                                    type: "postback",
+                                    title: "Get Started",
+                                    payload: "GET_STARTED"
+                                }
+                            ]
+                        },
+                        {
+                            title: "Need Support?",
+                            subtitle: "Contact us anytime.",
+                            image_url: "https://via.placeholder.com/150",
+                            buttons: [
+                                {
+                                    type: "phone_number",
+                                    title: "Call Us",
+                                    payload: "+123456789"
+                                },
+                                {
+                                    type: "postback",
+                                    title: "Send Message",
+                                    payload: "SUPPORT_MESSAGE"
+                                }
+                            ]
                         }
                     ]
                 }
             }
         }
-    }).then(response => {
-        console.log('Message sent successfully:', response.data);
-    }).catch(error => {
-        console.error('Error sending message:', error);
-    });
+    };
+
+    axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, payload)
+        .then(response => {
+            console.log('Template sent successfully:', response.data);
+        })
+        .catch(error => {
+            console.error('Error sending template:', error.response ? error.response.data : error);
+        });
 };
 
 app.listen(port, () => {
