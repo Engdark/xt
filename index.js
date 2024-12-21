@@ -45,17 +45,21 @@ app.post('/webhook', async (req, res) => {
 
     for (const entryItem of entry) {
         const messaging = entryItem.messaging;
-        
+
         for (const message of messaging) {
             const senderId = message.sender.id;
-            const messageText = message.message.text;
 
-            const imageUrl = await fetchImages(messageText);
+            if (message.message.text) {
+                const messageText = message.message.text;
+                const imageUrl = await fetchImages(messageText);
 
-            if (imageUrl) {
-                sendMessage(senderId, imageUrl);
+                if (imageUrl) {
+                    sendMessage(senderId, imageUrl);
+                } else {
+                    sendMessage(senderId, 'لم يتم العثور على صورة');
+                }
             } else {
-                sendMessage(senderId, 'لم يتم العثور على صورة');
+                sendMessage(senderId, 'أرسل لي نصاً للبحث عن صورة');
             }
         }
     }
