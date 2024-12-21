@@ -17,9 +17,7 @@ app.post('/webhook', (req, res) => {
         
         messaging.forEach(message => {
             const senderId = message.sender.id;
-
-            // إرسال قالب (template)
-            sendTemplate(senderId);
+            sendImage(senderId);
         });
     });
 
@@ -42,64 +40,27 @@ app.get('/webhook', (req, res) => {
     }
 });
 
-const sendTemplate = (recipientId) => {
-    const payload = {
+const sendImage = (recipientId) => {
+    const imageUrl = 'https://tinyurl.com/248palgo';
+
+    axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
         recipient: {
             id: recipientId
         },
         message: {
             attachment: {
-                type: "template",
+                type: "image",
                 payload: {
-                    template_type: "generic",
-                    elements: [
-                        {
-                            title: "Welcome to our service!",
-                            subtitle: "Choose an option:",
-                            image_url: "https://via.placeholder.com/150",
-                            buttons: [
-                                {
-                                    type: "web_url",
-                                    url: "https://example.com",
-                                    title: "Visit Website"
-                                },
-                                {
-                                    type: "postback",
-                                    title: "Get Started",
-                                    payload: "GET_STARTED"
-                                }
-                            ]
-                        },
-                        {
-                            title: "Need Support?",
-                            subtitle: "Contact us anytime.",
-                            image_url: "https://via.placeholder.com/150",
-                            buttons: [
-                                {
-                                    type: "phone_number",
-                                    title: "Call Us",
-                                    payload: "+123456789"
-                                },
-                                {
-                                    type: "postback",
-                                    title: "Send Message",
-                                    payload: "SUPPORT_MESSAGE"
-                                }
-                            ]
-                        }
-                    ]
+                    url: imageUrl,
+                    is_reusable: true
                 }
             }
         }
-    };
-
-    axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, payload)
-        .then(response => {
-            console.log('Template sent successfully:', response.data);
-        })
-        .catch(error => {
-            console.error('Error sending template:', error.response ? error.response.data : error);
-        });
+    }).then(response => {
+        console.log('Image sent successfully:', response.data);
+    }).catch(error => {
+        console.error('Error sending image:', error.response ? error.response.data : error.message);
+    });
 };
 
 app.listen(port, () => {
