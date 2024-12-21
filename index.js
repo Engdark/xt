@@ -41,7 +41,7 @@ app.get('/webhook', (req, res) => {
 });
 
 const sendImage = (recipientId) => {
-    const imageUrl = 'https://tinyurl.com/248palgo';
+    const imageUrl = 'https://www.leparisien.fr/resizer/kUkxiKOQZjOcWBZ382PhaXIjWBA=/932x582/cloudfront-eu-central-1.images.arcpublishing.com/leparisien/GA3CUH7VFVDMZKJJM6VIF2KBDA.jpg';
 
     axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
         recipient: {
