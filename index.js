@@ -49,7 +49,7 @@ app.post('/webhook', async (req, res) => {
         for (const message of messaging) {
             const senderId = message.sender.id;
 
-            if (message.message.text) {
+            if (message.message && message.message.text) {
                 const messageText = message.message.text;
                 const imageUrl = await fetchImages(messageText);
 
