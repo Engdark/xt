@@ -1,3 +1,4 @@
+const cheerio = require('cheerio');
 const express = require('express');
 const axios = require('axios');
 const bodyParser = require('body-parser');
@@ -5,25 +6,59 @@ const bodyParser = require('body-parser');
 const app = express();
 const port = 3000;
 
+async function fetchImages(text) {
+  const url = `https://unsplash.com/s/photos/${encodeURIComponent(text)}`;
+  try {
+    const response = await axios.get(url);
+    const body = response.data;
+
+    const $ = cheerio.load(body);
+
+    const images = [];
+    $('img').each((index, element) => {
+      const imageUrl = $(element).attr('src');
+      if (imageUrl && imageUrl.startsWith('https://') && !imageUrl.startsWith('https://secure') && !imageUrl.includes('&h=')) {
+        images.push(imageUrl);
+      }
+    });
+
+    if (images.length > 0) {
+      const randomIndex = Math.floor(Math.random() * images.length);
+      return images[randomIndex];
+    } else {
+      console.log('No images found.');
+      return null;
+    }
+
+  } catch (error) {
+    console.error('Error while fetching data:', error);
+    return null;
+  }
+}
+
 const PAGE_ACCESS_TOKEN = 'EAAchMB49yMsBOxCDJvV5F8ZBSk9SofOw3EBbg16p1rm0i1n0qam3DJEl5ZAkPZAsBUbvjnexJZAhqaZCwmr3RjZByjVMlEJA3ODWzB2yt5QIjbZCJtHyGrt9SN088Q8ins8ZCJu91AUR8HSHNswGppk3ETcsX5rp3a2K1ziEoURzWG8hSxqx5DiGnfgOy6Nc68voLLHgscK8tpoA1sgPTgZDZD';
 
 app.use(bodyParser.json());
 
-app.post('/webhook', (req, res) => {
+app.post('/webhook', async (req, res) => {
     const entry = req.body.entry;
 
-    entry.forEach(entryItem => {
+    for (const entryItem of entry) {
         const messaging = entryItem.messaging;
         
-        messaging.forEach(message => {
+        for (const message of messaging) {
             const senderId = message.sender.id;
             const messageText = message.message.text;
 
-            const upperCaseMessage = messageText.toUpperCase();
+            const imageUrl = await fetchImages(messageText);
 
-            sendMessage(senderId, `You said: ${upperCaseMessage}`);
-        });
-    });
+            if (imageUrl) {
+                sendMessage(senderId, imageUrl);
+            } else {
+                sendMessage(senderId, 'لم يتم العثور على صورة');
+            }
+        }
+    }
 
     res.status(200).send('EVENT_RECEIVED');
 });
@@ -44,13 +79,19 @@ app.get('/webhook', (req, res) => {
     }
 });
 
-const sendMessage = (recipientId, message) => {
+const sendMessage = (recipientId, imageUrl) => {
     axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
         recipient: {
             id: recipientId
         },
         message: {
-            text: message
+            attachment: {
+                type: 'image',
+                payload: {
+                    url: imageUrl,
+                    is_reusable: true
+                }
+            }
         }
     }).then(response => {
         console.log('Message sent successfully:', response.data);
