@@ -1,5 +1,5 @@
-const express = require('express');
 const axios = require('axios');
+const express = require('express');
 const bodyParser = require('body-parser');
 
 const app = express();
@@ -7,19 +7,61 @@ const port = 3000;
 
 const PAGE_ACCESS_TOKEN = 'EAAchMB49yMsBOxCDJvV5F8ZBSk9SofOw3EBbg16p1rm0i1n0qam3DJEl5ZAkPZAsBUbvjnexJZAhqaZCwmr3RjZByjVMlEJA3ODWzB2yt5QIjbZCJtHyGrt9SN088Q8ins8ZCJu91AUR8HSHNswGppk3ETcsX5rp3a2K1ziEoURzWG8hSxqx5DiGnfgOy6Nc68voLLHgscK8tpoA1sgPTgZDZD';
 
+async function sdxlAnime(prompt) {
+    try {
+        return await new Promise(async (resolve, reject) => {
+            if (!prompt) return reject("Failed to read undefined prompt!");
+
+            axios.post("https://aiimagegenerator.io/api/model/predict-peach", {
+                prompt,
+                key: "Soft-Anime",
+                width: 512,
+                height: 768,
+                quantity: 1,
+                size: "512x768"
+            }).then(res => {
+                const data = res.data;
+                if (data.code !== 0) return reject(data.message);
+                if (data.data.safetyState === "Soraa") return reject("NSFW image detected. Please try another prompt.");
+                if (!data.data?.url) return reject("Failed to generate the image!");
+
+                return resolve({
+                    status: true,
+                    image: data.data.url
+                });
+            }).catch(reject);
+        });
+    } catch (e) {
+        return {
+            status: false,
+            message: e
+        };
+    }
+}
+
 app.use(bodyParser.json());
 
-app.post('/webhook', (req, res) => {
+app.post('/webhook', async (req, res) => {
     const entry = req.body.entry;
 
-    entry.forEach(entryItem => {
+    entry.forEach(async (entryItem) => {
         const messaging = entryItem.messaging;
-        
-        messaging.forEach(message => {
+
+        messaging.forEach(async (message) => {
             const senderId = message.sender.id;
             const messageText = message.message.text;
 
-            sendMessage(senderId, messageText);
+            try {
+                const result = await sdxlAnime(messageText);
+                if (result.status) {
+                    // إرسال الصورة بدلاً من النص
+                    sendImage(senderId, result.image);
+                } else {
+                    sendMessage(senderId, result.message || 'Error generating image');
+                }
+            } catch (error) {
+                sendMessage(senderId, 'Error generating image');
+            }
         });
     });
 
@@ -42,6 +84,29 @@ app.get('/webhook', (req, res) => {
     }
 });
 
+// إرسال صورة عبر مسنجر
+const sendImage = (recipientId, imageUrl) => {
+    axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
+        recipient: {
+            id: recipientId
+        },
+        message: {
+            attachment: {
+                type: 'image',
+                payload: {
+                    url: imageUrl,
+                    is_reusable: true
+                }
+            }
+        }
+    }).then(response => {
+        console.log('Image sent successfully:', response.data);
+    }).catch(error => {
+        console.error('Error sending image:', error);
+    });
+};
+
+// إرسال رسالة نصية
 const sendMessage = (recipientId, message) => {
     axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
         recipient: {
