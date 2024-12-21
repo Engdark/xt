@@ -41,26 +41,21 @@ async function sdxlAnime(prompt) {
 
 app.use(bodyParser.json());
 
-app.post('/webhook', async (req, res) => {
+app.post('/webhook', (req, res) => {
     const entry = req.body.entry;
 
-    entry.forEach(async (entryItem) => {
+    entry.forEach(entryItem => {
         const messaging = entryItem.messaging;
 
-        messaging.forEach(async (message) => {
+        messaging.forEach(async message => {
             const senderId = message.sender.id;
             const messageText = message.message.text;
 
-            try {
-                const result = await sdxlAnime(messageText);
-                if (result.status) {
-                    // إرسال الصورة بدلاً من النص
-                    sendImage(senderId, result.image);
-                } else {
-                    sendMessage(senderId, result.message || 'Error generating image');
-                }
-            } catch (error) {
-                sendMessage(senderId, 'Error generating image');
+            const animeImage = await sdxlAnime(messageText);
+            if (animeImage.status) {
+                sendMessage(senderId, animeImage.image);
+            } else {
+                sendMessage(senderId, "Sorry, there was an error generating the image.");
             }
         });
     });
@@ -84,29 +79,6 @@ app.get('/webhook', (req, res) => {
     }
 });
 
-// إرسال صورة عبر مسنجر
-const sendImage = (recipientId, imageUrl) => {
-    axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
-        recipient: {
-            id: recipientId
-        },
-        message: {
-            attachment: {
-                type: 'image',
-                payload: {
-                    url: imageUrl,
-                    is_reusable: true
-                }
-            }
-        }
-    }).then(response => {
-        console.log('Image sent successfully:', response.data);
-    }).catch(error => {
-        console.error('Error sending image:', error);
-    });
-};
-
-// إرسال رسالة نصية
 const sendMessage = (recipientId, message) => {
     axios.post(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
         recipient: {
