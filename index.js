@@ -7,11 +7,9 @@ const port = 3000;
 
 const PAGE_ACCESS_TOKEN = 'EAAchMB49yMsBOxCDJvV5F8ZBSk9SofOw3EBbg16p1rm0i1n0qam3DJEl5ZAkPZAsBUbvjnexJZAhqaZCwmr3RjZByjVMlEJA3ODWzB2yt5QIjbZCJtHyGrt9SN088Q8ins8ZCJu91AUR8HSHNswGppk3ETcsX5rp3a2K1ziEoURzWG8hSxqx5DiGnfgOy6Nc68voLLHgscK8tpoA1sgPTgZDZD';
 
-async function sdxlAnime(prompt) {
+async function text_toanime(prompt) {
     try {
         return await new Promise(async (resolve, reject) => {
-            if (!prompt) return reject("Failed to read undefined prompt!");
-
             axios.post("https://aiimagegenerator.io/api/model/predict-peach", {
                 prompt,
                 key: "Soft-Anime",
@@ -41,24 +39,29 @@ async function sdxlAnime(prompt) {
 
 app.use(bodyParser.json());
 
-app.post('/webhook', (req, res) => {
+app.post('/webhook', async (req, res) => {
     const entry = req.body.entry;
 
-    entry.forEach(entryItem => {
+    for (const entryItem of entry) {
         const messaging = entryItem.messaging;
 
-        messaging.forEach(async message => {
+        for (const message of messaging) {
             const senderId = message.sender.id;
             const messageText = message.message.text;
 
-            const animeImage = await sdxlAnime(messageText);
-            if (animeImage.status) {
-                sendMessage(senderId, animeImage.image);
-            } else {
-                sendMessage(senderId, "Sorry, there was an error generating the image.");
+            try {
+                const animeResult = await text_toanime(messageText);
+                if (animeResult.status) {
+                    const responseMessage = `Your search: ${messageText}\nURL Image: ${animeResult.image}`;
+                    sendMessage(senderId, responseMessage);
+                } else {
+                    sendMessage(senderId, `Failed to generate image: ${animeResult.message}`);
+                }
+            } catch (error) {
+                sendMessage(senderId, `Error: ${error.message || error}`);
             }
-        });
-    });
+        }
+    }
 
     res.status(200).send('EVENT_RECEIVED');
 });
